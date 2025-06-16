@@ -47,10 +47,11 @@ jobs:
       id: get-run-id
       working-directory: ./MLProject
       run: |
-        echo "Getting latest MLflow run ID from experiment"
-        RUN_ID=$(mlflow runs list -e rf_experiment_tuning -o json | jq -r '.[0].info.run_id')
+        bash -l -c '
+        echo "📥 Getting latest MLflow run ID from experiment..."
+        RUN_ID=$(mlflow runs list -e rf_experiment_tuning -o json | jq -r ".[0].info.run_id")
         echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
-        echo "Found Run ID: $RUN_ID""
+        echo "Found Run ID: $RUN_ID"
         
     - name: 7. Login to Docker Hub
       uses: docker/login-action@v3
