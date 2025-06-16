@@ -14,19 +14,23 @@ jobs:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      # Langkah ini menyiapkan lingkungan Conda dengan benar
       - name: 2. Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          # Memberitahu action untuk secara otomatis menjalankan 'conda init'
-          auto_activate_base: false
-          # Mengaktifkan shell agar siap digunakan untuk perintah conda berikutnya
-          activate-environment: ''
-          # Menggunakan channel conda-forge yang seringkali memiliki paket lebih update
+          python-version: '3.9'
           channel-priority: 'flexible'
           
-      - name: 3. Install Project Dependencies and Run MLflow
-        # 'shell: bash -l {0}' sangat penting agar perintah 'conda' bisa ditemukan
+      # ====================================================================
+      # === LANGKAH BARU YANG DITAMBAHKAN UNTUK MENGATASI ERROR ===
+      # ====================================================================
+      - name: 3. Install MLflow CLI and Dependencies
+        shell: bash -l {0}
+        run: |
+          echo "Installing mlflow, dagshub, and jq in the base environment..."
+          pip install mlflow dagshub jq
+          echo "Installation complete."
+
+      - name: 4. Run MLflow Project
         shell: bash -l {0}
         working-directory: ./MLProject
         env:
@@ -34,31 +38,23 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
-          # Perintah ini menjalankan semuanya dalam satu langkah
-          # MLflow akan:
-          # 1. Membaca MLProject dan conda.yaml
-          # 2. Membuat lingkungan conda baru sesuai resep di conda.yaml
-          # 3. Mengaktifkan lingkungan tersebut
-          # 4. Menjalankan 'python modelling.py' di dalamnya
           echo "Starting MLflow run with Conda..."
+          # Sekarang perintah 'mlflow' sudah ditemukan karena diinstal di langkah sebelumnya
           mlflow run .
           echo "MLflow run finished."
           
-      - name: 4. Login to Docker Hub
+      - name: 5. Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: 5. Build and Push Docker Image
+      - name: 6. Build and Push Docker Image
         shell: bash -l {0}
         run: |
-          # Install jq untuk mem-parsing output JSON
-          conda install -y jq
-
           IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest"
           
-          # Mengambil RUN_ID dari MLflow
+          echo "Searching for Run ID..."
           RUN_ID=$(mlflow runs list --experiment-name "rf_experiment_tuning" --query "tags.mlflow.runName = 'RF_Tuned_Run'" -o json | jq -r '.[0].info.run_id')
           
           if [ -z "$RUN_ID" ]; then
@@ -68,12 +64,13 @@ jobs:
 
           echo "Found Run ID: $RUN_ID"
           
-          # Membangun Docker image dari model
+          echo "Building Docker image from model..."
           mlflow models build-docker --model-uri "runs:/${RUN_ID}/rf_best_model" --name "$IMAGE_NAME"
 
+          echo "Pushing Docker image to Docker Hub..."
           docker push "$IMAGE_NAME"
           echo "✅ Docker image pushed to Docker Hub: $IMAGE_NAME"
           
-      - name: 6. Log out from Docker Hub
+      - name: 7. Log out from Docker Hub
         if: always()
         run: docker logout
