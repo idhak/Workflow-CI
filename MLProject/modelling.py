@@ -107,11 +107,3 @@ with mlflow.start_run(run_name="RF_Tuned_Run"):
     plt.close()
     os.remove("confusion_matrix.png")
 
-
-    # === Auto requirements.txt ===
-    req_file = "requirements.txt"
-    with open(req_file, "w") as f:
-        installed = subprocess.check_output(["pip", "freeze"]).decode("utf-8")
-        f.write(installed)
-    mlflow.log_artifact(req_file)
-    print("\n✅ File 'requirements.txt' telah disimpan dan di-log ke MLflow.")
