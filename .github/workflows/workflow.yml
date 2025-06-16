@@ -14,40 +14,48 @@ jobs:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. Set up Python
-        uses: actions/setup-python@v5
+      # Langkah ini menyiapkan lingkungan Conda dengan benar
+      - name: 2. Setup Conda Environment
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.9'
-
-      - name: 3. Install Dependencies
+          # Memberitahu action untuk secara otomatis menjalankan 'conda init'
+          auto_activate_base: false
+          # Mengaktifkan shell agar siap digunakan untuk perintah conda berikutnya
+          activate-environment: ''
+          # Menggunakan channel conda-forge yang seringkali memiliki paket lebih update
+          channel-priority: 'flexible'
+          
+      - name: 3. Install Project Dependencies and Run MLflow
+        # 'shell: bash -l {0}' sangat penting agar perintah 'conda' bisa ditemukan
+        shell: bash -l {0}
+        working-directory: ./MLProject
+        env:
+          MLFLOW_TRACKING_URI: https://dagshub.com/idhak/SMSML_Idha_Kurniawati.mlflow
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
-          python -m pip install --upgrade pip
-          pip install mlflow dagshub pandas scikit-learn matplotlib seaborn joblib shap
+          # Perintah ini menjalankan semuanya dalam satu langkah
+          # MLflow akan:
+          # 1. Membaca MLProject dan conda.yaml
+          # 2. Membuat lingkungan conda baru sesuai resep di conda.yaml
+          # 3. Mengaktifkan lingkungan tersebut
+          # 4. Menjalankan 'python modelling.py' di dalamnya
+          echo "Starting MLflow run with Conda..."
+          mlflow run .
+          echo "MLflow run finished."
           
-      - name: 4. Configure DagsHub/MLflow Credentials
-        env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/idhak/SMSML_Idha_Kurniawati.mlflow
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-        run: echo "MLflow tracking URI is set."
-
-      - name: 5. Run MLflow Project to Train Model
-        id: train_run
-        working-directory: ./MLProject  # Pindah ke folder MLProject sebelum menjalankan
-        env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/idhak/SMSML_Idha_Kurniawati.mlflow
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-        run: mlflow run .
-          
-      - name: 6. Login to Docker Hub
+      - name: 4. Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: 7. Build and Push Docker Image
+      - name: 5. Build and Push Docker Image
+        shell: bash -l {0}
         run: |
+          # Install jq untuk mem-parsing output JSON
+          conda install -y jq
+
           IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest"
           
           # Mengambil RUN_ID dari MLflow
@@ -66,6 +74,6 @@ jobs:
           docker push "$IMAGE_NAME"
           echo "✅ Docker image pushed to Docker Hub: $IMAGE_NAME"
           
-      - name: 8. Log out from Docker Hub
+      - name: 6. Log out from Docker Hub
         if: always()
         run: docker logout
