@@ -28,9 +28,7 @@ jobs:
           conda install -y curl
           echo "Installation complete."
 
-      # ====================================================================
-      # === LANGKAH DEBUGGING BARU & SANGAT PENTING ===
-      # ====================================================================
+        # LANGKAH DEBUGGING BARU & SANGAT PENTING
       - name: 4. Debug: Print Secrets and Test API Connection
         shell: bash -l {0}
         run: |
@@ -38,7 +36,6 @@ jobs:
           echo "Verifying username from secrets..."
           # Perintah ini akan mencetak username untuk memastikan tidak ada typo atau spasi
           echo "Username used: '${{ secrets.MLFLOW_TRACKING_USERNAME }}'"
-          
           echo "----------------------------------------------------"
           echo "Testing direct API connection to DagsHub with curl..."
           # Perintah curl ini mencoba mengambil info user dari API DagsHub
