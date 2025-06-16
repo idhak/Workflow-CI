@@ -49,11 +49,13 @@ jobs:
       run: |
         echo "📥 Getting latest MLflow run ID from experiment..."
         bash -l -c "
-        RUN_ID=\$(mlflow runs list --experiment-name rf_experiment_tuning -o json | jq -r '.[0].info.run_id');
+        EXP_ID=\$(mlflow experiments list | grep 'rf_experiment_tuning' | awk '{print \$1}');
+        echo Found Experiment ID: \$EXP_ID;
+        RUN_ID=\$(mlflow runs list --experiment-id \$EXP_ID -o json | jq -r '.[0].info.run_id');
         echo run_id=\$RUN_ID >> \$GITHUB_OUTPUT;
         echo Found Run ID: \$RUN_ID;
         "
-        
+
     - name: 7. Login to Docker Hub
       uses: docker/login-action@v3
       with:
