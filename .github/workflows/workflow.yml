@@ -22,10 +22,11 @@ jobs:
         auto-update-conda: true
         
     - name: 3. Install Dependencies
-      shell: bash -l {0}
+      shell: bash -l {0}  # Pastikan pakai login shell
       run: |
-        conda env update -f MLProject/conda.yaml
-        pip install jq  # Untuk parsing JSON
+        conda config --set channel_priority strict
+        conda env update -n smsml-project -f MLProject/conda.yaml
+        conda list  # Untuk debug
         
     - name: 4. Verify Data Directory
       working-directory: ./MLProject
@@ -35,12 +36,11 @@ jobs:
         [ -f data_preprocessing/X_train_processed.csv ] || exit 1
         
     - name: 5. Run ML Training
+      shell: bash -l {0}  # Gunakan login shell
       working-directory: ./MLProject
-      env:
-        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-        MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
       run: |
+        conda activate smsml-project
+        python -c "import joblib; print(joblib.__version__)"  # Test import
         python modelling.py
         
     - name: 6. Get MLflow Run ID
