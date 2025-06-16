@@ -13,3 +13,5 @@ dependencies:
     - dagshub
     - shap
     - joblib>=1.2.0  # Tambahkan versi explicit
+    - httpx>=0.23.0  # Pastikan versi terbaru
+    - urllib3>=1.26  # Untuk fallback koneksi
