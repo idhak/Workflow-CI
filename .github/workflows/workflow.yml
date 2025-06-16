@@ -1,4 +1,5 @@
-name: ML Pipeline CI/CD
+name: ML Pipeline CI/CD (Conda Environment)
+
 on:
   push:
     branches:
@@ -27,26 +28,18 @@ jobs:
           conda install -y curl
           echo "Installation complete."
 
-      # ====================================================================
-      # === LANGKAH DEBUGGING BARU & SANGAT PENTING ===
-      # ====================================================================
       - name: 4. Debug: Print Secrets and Test API Connection
         shell: bash -l {0}
         run: |
           echo "================== DEBUGGING INFO =================="
           echo "Verifying username from secrets..."
-          # Perintah ini akan mencetak username untuk memastikan tidak ada typo atau spasi
           echo "Username used: '${{ secrets.MLFLOW_TRACKING_USERNAME }}'"
           echo "----------------------------------------------------"
           echo "Testing direct API connection to DagsHub with curl..."
-          # Perintah curl ini mencoba mengambil info user dari API DagsHub
-          # -v (verbose) akan menampilkan detail proses koneksi TLS/SSL
           curl -v -H "Authorization: token ${{ secrets.MLFLOW_TRACKING_PASSWORD }}" https://dagshub.com/api/v1/user
           echo "================ END DEBUGGING INFO ================"
 
       - name: 5. Run MLflow Project
-        # 'continue-on-error' agar workflow tidak berhenti jika langkah ini gagal
-        # sehingga kita tetap bisa melihat hasil debug
         continue-on-error: true
         shell: bash -l {0}
         working-directory: ./MLProject
@@ -56,7 +49,6 @@ jobs:
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
           echo "Starting MLflow run..."
-          # Script modelling.py masih menggunakan #dagshub.init(...)
           mlflow run .
           echo "MLflow run finished."
           
