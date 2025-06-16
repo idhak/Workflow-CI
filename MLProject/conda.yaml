@@ -1,0 +1,18 @@
+name: mlflow-project
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - scikit-learn
+  - pandas
+  - matplotlib
+  - seaborn
+  - xgboost
+  - lightgbm
+  - pip:
+    - mlflow
+    - dagshub
+    - shap
+    - joblib
