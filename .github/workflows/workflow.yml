@@ -20,17 +20,36 @@ jobs:
           python-version: '3.9'
           channel-priority: 'flexible'
           
-      # ====================================================================
-      # === LANGKAH BARU YANG DITAMBAHKAN UNTUK MENGATASI ERROR ===
-      # ====================================================================
       - name: 3. Install MLflow CLI and Dependencies
         shell: bash -l {0}
         run: |
-          echo "Installing mlflow, dagshub, and jq in the base environment..."
+          echo "Installing mlflow, dagshub, jq, and curl..."
           pip install mlflow dagshub jq
+          conda install -y curl
           echo "Installation complete."
 
-      - name: 4. Run MLflow Project
+      # ====================================================================
+      # === LANGKAH DEBUGGING BARU & SANGAT PENTING ===
+      # ====================================================================
+      - name: 4. Debug: Print Secrets and Test API Connection
+        shell: bash -l {0}
+        run: |
+          echo "================== DEBUGGING INFO =================="
+          echo "Verifying username from secrets..."
+          # Perintah ini akan mencetak username untuk memastikan tidak ada typo atau spasi
+          echo "Username used: '${{ secrets.MLFLOW_TRACKING_USERNAME }}'"
+          
+          echo "----------------------------------------------------"
+          echo "Testing direct API connection to DagsHub with curl..."
+          # Perintah curl ini mencoba mengambil info user dari API DagsHub
+          # -v (verbose) akan menampilkan detail proses koneksi TLS/SSL
+          curl -v -H "Authorization: token ${{ secrets.MLFLOW_TRACKING_PASSWORD }}" https://dagshub.com/api/v1/user
+          echo "================ END DEBUGGING INFO ================"
+
+      - name: 5. Run MLflow Project
+        # 'continue-on-error' agar workflow tidak berhenti jika langkah ini gagal
+        # sehingga kita tetap bisa melihat hasil debug
+        continue-on-error: true
         shell: bash -l {0}
         working-directory: ./MLProject
         env:
@@ -38,18 +57,19 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
-          echo "Starting MLflow run with Conda..."
-          # Sekarang perintah 'mlflow' sudah ditemukan karena diinstal di langkah sebelumnya
+          echo "Starting MLflow run..."
+          # Script modelling.py masih menggunakan #dagshub.init(...)
           mlflow run .
           echo "MLflow run finished."
           
-      - name: 5. Login to Docker Hub
+      # Langkah-langkah Docker tetap sama
+      - name: 6. Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: 6. Build and Push Docker Image
+          
+      - name: 7. Build and Push Docker Image
         shell: bash -l {0}
         run: |
           IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest"
@@ -71,6 +91,6 @@ jobs:
           docker push "$IMAGE_NAME"
           echo "✅ Docker image pushed to Docker Hub: $IMAGE_NAME"
           
-      - name: 7. Log out from Docker Hub
+      - name: 8. Log out from Docker Hub
         if: always()
         run: docker logout
