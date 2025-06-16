@@ -16,8 +16,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 
 # Inisialisasi DagsHub + MLflow
-dagshub.init(repo_owner="idhak", repo_name="SMSML_Idha_Kurniawati", mlflow=True)
+os.environ['MLFLOW_TRACKING_USERNAME'] = 'idhak'  # username
+os.environ['MLFLOW_TRACKING_PASSWORD'] = 'a7778d8ad23881b5cd102ca2f9a4172c7f242084'    # token
 mlflow.set_tracking_uri("https://dagshub.com/idhak/SMSML_Idha_Kurniawati.mlflow")
+
 
 # Load data hasil preprocessing
 base_dir = Path(__file__).resolve().parent / "data_preprocessing"
