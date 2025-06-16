@@ -9,7 +9,7 @@ dependencies:
   - matplotlib
   - seaborn
   - pip:
-    - mlflow
+    - mlflow>=2.0.1
     - dagshub
     - shap
     - joblib>=1.2.0  # Tambahkan versi explicit
