@@ -23,12 +23,9 @@ jobs:
         
     - name: 3. Install Dependencies
       run: |
-        conda config --set channel_priority strict
-        conda env update -n smsml-project -f MLProject/conda.yaml
-        source ~/miniconda3/etc/profile.d/conda.sh
-        conda activate smsml-project
-        pip install mlflow==2.12.1
-        mlflow --version
+        bash -l -c "conda config --set channel_priority strict"
+        bash -l -c "conda env update -n smsml-project -f MLProject/conda.yaml"
+        bash -l -c "conda list"
         
     - name: 4. Verify Data Directory
       working-directory: ./MLProject
@@ -50,13 +47,10 @@ jobs:
       id: get-run-id
       working-directory: ./MLProject
       run: |
-        source ~/miniconda3/etc/profile.d/conda.sh
-        conda activate smsml-project
-        echo "📥 Getting latest MLflow run ID from experiment..."
-        RUN_ID=$(mlflow runs list --experiment-name rf_experiment_tuning -o json | jq -r '.[0].info.run_id')
+        RUN_ID=$(mlflow runs list --experiment-name "rf_experiment_tuning" --query "tags.mlflow.runName = 'RF_Tuned_Run'" -o json | jq -r '.[0].info.run_id')
         echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
         echo "Found Run ID: $RUN_ID"
-
+        
     - name: 7. Login to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -67,14 +61,11 @@ jobs:
       if: steps.get-run-id.outputs.run_id != ''
       run: |
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/smsml-model:latest"
-        echo "🛠 Building Docker image from model run..."
         mlflow models build-docker \
           --model-uri "runs:/${{ steps.get-run-id.outputs.run_id }}/rf_best_model" \
-          --name "$IMAGE_NAME" || { echo "❌ Failed to build Docker image"; exit 1; }
-
-        echo "🚀 Pushing Docker image to Docker Hub..."
-        docker push "$IMAGE_NAME" || { echo "❌ Failed to push image to Docker Hub"; exit 1; }
-        echo "✅ Docker image pushed: $IMAGE_NAME"
+          --name "$IMAGE_NAME"
+        docker push "$IMAGE_NAME"
+        echo "Docker image pushed: $IMAGE_NAME"
         
     - name: 9. Upload Artifacts
       uses: actions/upload-artifact@v4
