@@ -23,10 +23,12 @@ jobs:
         
     - name: 3. Install Dependencies
       run: |
-        bash -l -c "conda config --set channel_priority strict"
-        bash -l -c "conda env update -n smsml-project -f MLProject/conda.yaml"
-        bash -l -c "conda activate smsml-project && pip install mlflow==2.12.1"
-        bash -l -c "mlflow --version"
+        conda config --set channel_priority strict
+        conda env update -n smsml-project -f MLProject/conda.yaml
+        source ~/miniconda3/etc/profile.d/conda.sh
+        conda activate smsml-project
+        pip install mlflow==2.12.1
+        mlflow --version
         
     - name: 4. Verify Data Directory
       working-directory: ./MLProject
@@ -48,12 +50,12 @@ jobs:
       id: get-run-id
       working-directory: ./MLProject
       run: |
+        source ~/miniconda3/etc/profile.d/conda.sh
+        conda activate smsml-project
         echo "📥 Getting latest MLflow run ID from experiment..."
-        bash -l -c "
-        RUN_ID=\$(mlflow runs list --experiment-name rf_experiment_tuning -o json | jq -r '.[0].info.run_id');
-        echo run_id=\$RUN_ID >> \$GITHUB_OUTPUT;
-        echo Found Run ID: \$RUN_ID;
-        "
+        RUN_ID=$(mlflow runs list --experiment-name rf_experiment_tuning -o json | jq -r '.[0].info.run_id')
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "Found Run ID: $RUN_ID"
 
     - name: 7. Login to Docker Hub
       uses: docker/login-action@v3
