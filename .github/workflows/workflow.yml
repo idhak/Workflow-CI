@@ -22,11 +22,10 @@ jobs:
         auto-update-conda: true
         
     - name: 3. Install Dependencies
-      shell: bash -l {0}  # Pastikan pakai login shell
       run: |
-        conda config --set channel_priority strict
-        conda env update -n smsml-project -f MLProject/conda.yaml
-        conda list  # Untuk debug
+        bash -l -c "conda config --set channel_priority strict"
+        bash -l -c "conda env update -n smsml-project -f MLProject/conda.yaml"
+        bash -l -c "conda list"
         
     - name: 4. Verify Data Directory
       working-directory: ./MLProject
@@ -35,13 +34,14 @@ jobs:
         ls -l data_preprocessing/
         [ -f data_preprocessing/X_train_processed.csv ] || exit 1
         
-    - name: 5. Run ML Training
-      shell: bash -l {0}  # Gunakan login shell
-      working-directory: ./MLProject
+    - name: 5. Run Training
+      env:
+        MLFLOW_TRACKING_URI: "https://dagshub.com/idhak/SMSML_Idha_Kurniawati.mlflow"
+        MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}  
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}     
       run: |
-        conda activate smsml-project
-        python -c "import joblib; print(joblib.__version__)"  # Test import
-        python modelling.py
+        bash -l -c "python -c 'import os; print(\"MLflow Tracking URI:\", os.getenv(\"MLFLOW_TRACKING_URI\"))'"
+        bash -l -c "python MLProject/modelling.py"
         
     - name: 6. Get MLflow Run ID
       id: get-run-id
