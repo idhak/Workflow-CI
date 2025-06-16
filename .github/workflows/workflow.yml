@@ -25,7 +25,8 @@ jobs:
       run: |
         bash -l -c "conda config --set channel_priority strict"
         bash -l -c "conda env update -n smsml-project -f MLProject/conda.yaml"
-        bash -l -c "conda list | grep mlflow"
+        bash -l -c "conda activate smsml-project && pip install mlflow==2.12.1"
+        bash -l -c "mlflow --version"
         
     - name: 4. Verify Data Directory
       working-directory: ./MLProject
