@@ -1,18 +1,15 @@
-name: mlflow-project
+name: smsml-project
 channels:
   - conda-forge
-  - defaults
+  - defaults  # Pastikan ini explicit
 dependencies:
   - python=3.9
-  - pip
-  - scikit-learn
+  - scikit-learn  # Sudah include joblib
   - pandas
   - matplotlib
   - seaborn
-  - xgboost
-  - lightgbm
   - pip:
     - mlflow
     - dagshub
     - shap
-    - joblib
+    - joblib>=1.2.0  # Tambahkan versi explicit
