@@ -25,7 +25,7 @@ jobs:
       run: |
         bash -l -c "conda config --set channel_priority strict"
         bash -l -c "conda env update -n smsml-project -f MLProject/conda.yaml"
-        bash -l -c "conda list"
+        bash -l -c "conda list | grep mlflow"
         
     - name: 4. Verify Data Directory
       working-directory: ./MLProject
@@ -49,9 +49,7 @@ jobs:
       run: |
         echo "📥 Getting latest MLflow run ID from experiment..."
         bash -l -c "
-        EXP_ID=\$(mlflow experiments list | grep 'rf_experiment_tuning' | awk '{print \$1}');
-        echo Found Experiment ID: \$EXP_ID;
-        RUN_ID=\$(mlflow runs list --experiment-id \$EXP_ID -o json | jq -r '.[0].info.run_id');
+        RUN_ID=\$(mlflow runs list --experiment-name rf_experiment_tuning -o json | jq -r '.[0].info.run_id');
         echo run_id=\$RUN_ID >> \$GITHUB_OUTPUT;
         echo Found Run ID: \$RUN_ID;
         "
