@@ -4,14 +4,13 @@ channels:
   - defaults  # Pastikan ini explicit
 dependencies:
   - python=3.9
-  - scikit-learn  # Sudah include joblib
   - pandas
+  - scikit-learn
+  - mlflow
+  - shap
   - matplotlib
   - seaborn
+  - pip
   - pip:
-    - mlflow>=2.0.1
     - dagshub
-    - shap
-    - joblib>=1.2.0  # Tambahkan versi explicit
-    - httpx>=0.23.0  # Pastikan versi terbaru
-    - urllib3>=1.26  # Untuk fallback koneksi
+    - dvc
