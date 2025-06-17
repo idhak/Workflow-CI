@@ -57,22 +57,31 @@ jobs:
       run: |
         conda activate smsml-project
         
-        # Dapatkan experiment ID terlebih dahulu
-        EXP_ID=$(mlflow experiments list --format json | jq -r '.experiments[] | select(.name=="random_forest_experiment_with_tuning") | .experiment_id')
-        
-        if [ -z "$EXP_ID" ]; then
-          echo "ERROR: Experiment not found"
-          mlflow experiments list
-          exit 1
-        fi
-
-        # Gunakan experiment ID untuk mencari run
-        RUN_JSON=$(mlflow runs list --experiment-id $EXP_ID -o json)
-        RUN_ID=$(echo "$RUN_JSON" | jq -r '.[] | select(.data.tags["mlflow.runName"] == "Tuned_Random_Forest") | .info.run_id')
+        # Untuk MLflow 2.3.0, gunakan search_runs melalui Python
+        RUN_ID=$(python -c "
+import mlflow
+from mlflow.tracking import MlflowClient
+client = MlflowClient()
+try:
+    exp = client.get_experiment_by_name('random_forest_experiment_with_tuning')
+    if not exp:
+        print('ERROR: Experiment not found', file=sys.stderr)
+        exit(1)
+    runs = client.search_runs(
+        experiment_ids=[exp.experiment_id],
+        filter_string=\"tags.mlflow.runName = 'Tuned_Random_Forest'\"
+    )
+    if not runs:
+        print('ERROR: Run not found', file=sys.stderr)
+        exit(1)
+    print(runs[0].info.run_id)
+except Exception as e:
+    print(f'ERROR: {str(e)}', file=sys.stderr)
+    exit(1)
+        ")
         
         if [ -z "$RUN_ID" ]; then
-          echo "ERROR: Run not found"
-          echo "$RUN_JSON" | jq .
+          echo "ERROR: Failed to retrieve Run ID"
           exit 1
         fi
         
