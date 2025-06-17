@@ -39,7 +39,8 @@ jobs:
         [ -f data_preprocessing/y_train.csv ] || exit 1
         
     - name: 5. Run Model Training
-      shell: bash -l {0}  # Critical: Use login shell
+      working-directory: ./MLProject  # Tambahkan ini
+      shell: bash -l {0}
       env:
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
         MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USER }}
@@ -47,7 +48,7 @@ jobs:
       run: |
         conda activate ml-project
         python -c "import os; print('MLflow Tracking URI:', os.getenv('MLFLOW_TRACKING_URI'))"
-        python modelling.py
+        python modelling.py  # Sekarang akan mencari file di direktori MLProject
         
     - name: 6. Retrieve MLflow Run ID
       id: mlflow-run
