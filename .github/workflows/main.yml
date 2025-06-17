@@ -55,17 +55,27 @@ jobs:
       working-directory: ./MLProject
       run: |
         RUN_ID=$(mlflow runs list --experiment-name "random_forest_experiment_with_tuning" \
-                --query "tags.mlflow.runName = 'Tuned_Random_Forest'" -o json | jq -r '.[0].info.run_id')
+          --query "tags.mlflow.runName = 'Tuned_Random_Forest'" -o json | jq -r '.[0].info.run_id')
+        if [ -z "$RUN_ID" ]; then
+          echo "::error::Failed to retrieve MLflow Run ID"
+          exit 1
+        fi
         echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
         echo "Retrieved Run ID: $RUN_ID"
+    
+    - name: 7. Verify Model URI
+      working-directory: ./MLProject
+      run: |
+        mlflow models inspect --model-uri "runs:/${{ steps.mlflow-run.outputs.run_id }}/optimized_model"
+        echo "Model URI verified successfully"
         
-    - name: 7. Docker Hub Login
+    - name: 8. Docker Hub Login
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         
-    - name: 8. Build and Push Docker Image
+    - name: 9. Build and Push Docker Image
       if: steps.mlflow-run.outputs.run_id != ''
       run: |
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-model:latest"
@@ -75,7 +85,7 @@ jobs:
         docker push "$IMAGE_NAME"
         echo "Docker image pushed: $IMAGE_NAME"
         
-    - name: 9. Upload Artifacts
+    - name: 10. Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: model-artifacts
