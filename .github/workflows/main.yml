@@ -34,9 +34,9 @@ jobs:
       shell: bash -l {0}  # Consistent shell
       run: |
         echo "Verifying data directory structure..."
-        ls -l data_processing/
-        [ -f data_processing/X_train_processed.csv ] || exit 1
-        [ -f data_processing/y_train.csv ] || exit 1
+        ls -l data_preprocessing/
+        [ -f data_preprocessing/X_train_processed.csv ] || exit 1
+        [ -f data_preprocessing/y_train.csv ] || exit 1
         
     - name: 5. Run Model Training
       shell: bash -l {0}  # Critical: Use login shell
