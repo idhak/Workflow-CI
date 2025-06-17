@@ -53,13 +53,27 @@ jobs:
     - name: 6. Retrieve MLflow Run ID
       id: mlflow-run
       working-directory: ./MLProject
+      shell: bash -l {0}
       run: |
-        # Tambahkan debug output
-        echo "Available runs:"
-        mlflow runs list --experiment-name "random_forest_experiment_with_tuning" -o json
+        # Aktifkan environment dan verifikasi
+        conda activate ml-project
+        echo "MLflow path: $(which mlflow)"
         
-        RUN_ID=$(mlflow runs list --experiment-name "random_forest_experiment_with_tuning" \
-                --query "tags.mlflow.runName = 'Tuned_Random_Forest'" -o json | jq -r '.[0].info.run_id')
+        # Dapatkan run ID dengan error handling
+        RUN_JSON=$(mlflow runs list --experiment-name "random_forest_experiment_with_tuning" -o json)
+        echo "MLflow runs list output: $RUN_JSON"
+        
+        RUN_ID=$(echo "$RUN_JSON" | jq -r '.[] | select(.data.tags["mlflow.runName"] == "Tuned_Random_Forest") | .info.run_id')
+        
+        if [ -z "$RUN_ID" ]; then
+          echo "ERROR: No run found with name 'Tuned_Random_Forest'"
+          echo "Available runs:"
+          echo "$RUN_JSON" | jq .
+          exit 1
+        fi
+        
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "Successfully retrieved Run ID: $RUN_ID"
         
         if [ -z "$RUN_ID" ]; then
           echo "Error: Failed to get Run ID"
