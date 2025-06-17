@@ -2,4 +2,11 @@ name: SMSML_Idha_Kurniawati
 conda_env: conda.yaml
 entry_points:
   main:
+    parameters:
+      data_dir:
+        type: str
+        default: "data_processing"
+      experiment_name:
+        type: str
+        default: "random_forest_experiment_with_tuning"
     command: "python modelling.py"
